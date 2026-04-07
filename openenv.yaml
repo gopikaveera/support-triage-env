@@ -1,0 +1,29 @@
+name: support_triage_env
+
+description: |
+  A synthetic environment where an AI agent performs customer support triage.
+  The agent must decide whether to monitor, clarify, assist, or escalate based on user scenarios.
+
+tasks:
+  - name: easy
+    description: Simple and clear support scenarios
+
+  - name: medium
+    description: Moderately ambiguous or multi-factor scenarios
+
+  - name: hard
+    description: Complex, high-risk or critical scenarios
+
+action_space:
+  type: discrete
+  values:
+    - monitor
+    - clarify
+    - assist
+    - escalate
+
+observation_space:
+  type: dict
+  fields:
+    scenario: string
+    step: integer
