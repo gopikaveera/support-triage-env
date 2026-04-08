@@ -7,16 +7,20 @@ class SupportTriageEnv:
         self.max_steps = max_steps
         self.step_count = 0
         self.current = None
+        self.history = []
 
     def reset(self):
         self.step_count = 0
         self.current = random.choice(SCENARIOS)
+        self.history = []
         return self.state()
 
     def state(self):
         return {
             "scenario": self.current["text"],
-            "step": self.step_count
+            "step": self.step_count,
+            "history": self.history,
+            "progress": f"Step {self.step_count} of {self.max_steps}"
         }
 
     def step(self, action):
@@ -35,9 +39,13 @@ class SupportTriageEnv:
         else:
             reward = base_reward
 
-        done = self.step_count >= self.max_steps
+        # Track action history
+        self.history.append(action)
 
-        # Move to next scenario
-        self.current = random.choice(SCENARIOS)
+        # Termination logic
+        if action == correct_action:
+            done = True
+        else:
+            done = self.step_count >= self.max_steps
 
         return self.state(), reward, done, {}
