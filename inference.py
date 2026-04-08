@@ -6,18 +6,18 @@ from env.support_triage_env import SupportTriageEnv
 # Required environment variables
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-HF_TOKEN = os.getenv("HF_TOKEN")
+API_KEY = os.getenv("API_KEY")
 
-if HF_TOKEN is None:
-    HF_TOKEN = "dummy_token_for_compliance"  # Placeholder token for compliance
+if API_KEY is None:
+    raise ValueError("API_KEY environment variable is required")
 
-# Initialize OpenAI client (MANDATORY for compliance)
+# Initialize OpenAI client
 client = OpenAI(
     base_url=API_BASE_URL,
-    api_key=HF_TOKEN
+    api_key=API_KEY
 )
 
-# Task setup (3 tasks: easy, medium, hard)
+# Task setup
 TASKS = ["easy", "medium", "hard"]
 TASK_NAME = random.choice(TASKS)
 BENCHMARK = "support_triage_env"
@@ -33,18 +33,27 @@ try:
     state = env.reset()
 
     for step in range(5):
-        text = state["scenario"].lower()
+        text = state["scenario"]
 
-        # Baseline decision logic
-        if "not working" in text:
-            action = "clarify"
-        elif "payment" in text or "charged" in text:
-            action = "escalate"
-        elif "crash" in text or "error" in text:
-            action = "assist"
-        elif "slow" in text:
-            action = "monitor"
-        else:
+        # 🔥 REAL API CALL (MANDATORY FOR PHASE 2)
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a support triage agent. Choose ONLY one action from: monitor, clarify, assist, escalate."
+                },
+                {
+                    "role": "user",
+                    "content": f"Scenario: {text}\nAnswer with only one word."
+                }
+            ]
+        )
+
+        action = response.choices[0].message.content.strip().lower()
+
+        # Safety fallback
+        if action not in ["monitor", "clarify", "assist", "escalate"]:
             action = "assist"
 
         state, reward, done, _ = env.step(action)
@@ -57,7 +66,7 @@ try:
             break
 
 except Exception as e:
-    print(f"[END] success=false steps={len(rewards)} rewards=0.00")
+    success = False
 
-# Final score
+# Final output
 print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(f'{r:.2f}' for r in rewards)}")
