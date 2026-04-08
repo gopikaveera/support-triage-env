@@ -1,5 +1,4 @@
 import os
-import random
 from openai import OpenAI
 from env.support_triage_env import SupportTriageEnv
 
@@ -19,54 +18,53 @@ client = OpenAI(
 
 # Task setup
 TASKS = ["easy", "medium", "hard"]
-TASK_NAME = random.choice(TASKS)
 BENCHMARK = "support_triage_env"
 
-env = SupportTriageEnv()
+for TASK_NAME in TASKS:
+    env = SupportTriageEnv()
 
-print(f"[START] task={TASK_NAME} env={BENCHMARK} model={MODEL_NAME}")
+    print(f"[START] task={TASK_NAME} env={BENCHMARK} model={MODEL_NAME}")
 
-rewards = []
-success = False
-
-try:
-    state = env.reset()
-
-    for step in range(5):
-        text = state["scenario"]
-
-        # 🔥 REAL API CALL (MANDATORY FOR PHASE 2)
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a support triage agent. Choose ONLY one action from: monitor, clarify, assist, escalate."
-                },
-                {
-                    "role": "user",
-                    "content": f"Scenario: {text}\nAnswer with only one word."
-                }
-            ]
-        )
-
-        action = response.choices[0].message.content.strip().lower()
-
-        # Safety fallback
-        if action not in ["monitor", "clarify", "assist", "escalate"]:
-            action = "assist"
-
-        state, reward, done, _ = env.step(action)
-        rewards.append(reward)
-
-        print(f"[STEP] step={step+1} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
-
-        if done:
-            success = True
-            break
-
-except Exception as e:
+    rewards = []
     success = False
 
-# Final output
-print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(f'{r:.2f}' for r in rewards)}")
+    try:
+        state = env.reset()
+
+        for step in range(5):
+            text = state["scenario"]
+
+            # 🔥 REQUIRED API CALL
+            response = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a support triage agent. Choose ONLY one action: monitor, clarify, assist, escalate."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Scenario: {text}\nAnswer with one word."
+                    }
+                ]
+            )
+
+            action = response.choices[0].message.content.strip().lower()
+
+            # Safety fallback
+            if action not in ["monitor", "clarify", "assist", "escalate"]:
+                action = "assist"
+
+            state, reward, done, _ = env.step(action)
+            rewards.append(reward)
+
+            print(f"[STEP] step={step+1} action={action} reward={reward:.2f} done={str(done).lower()} error=null")
+
+            if done:
+                success = True
+                break
+
+    except Exception:
+        success = False
+
+    print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(f'{r:.2f}' for r in rewards)}")
