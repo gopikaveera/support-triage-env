@@ -1,21 +1,32 @@
-VALID_ACTIONS = ["monitor", "clarify", "assist", "escalate"]
-
 def grade(action, correct_action):
-    # Case 1: Invalid action
-    if action not in VALID_ACTIONS:
-        return -0.5
+    """
+    Returns a score strictly between (0, 1)
+    """
 
-    # Case 2: Correct action
+    # Perfect match
     if action == correct_action:
-        return 1.0
+        return 0.9
 
-    # Case 3: Near miss logic
+    # Close / reasonable actions
     if correct_action == "assist" and action == "clarify":
-        return 0.25
-    if correct_action == "clarify" and action == "assist":
-        return 0.25
-    if correct_action == "monitor" and action == "clarify":
-        return 0.25
+        return 0.6
 
-    # Case 4: Wrong action
-    return -1.0
+    if correct_action == "clarify" and action == "assist":
+        return 0.6
+
+    if correct_action == "monitor" and action == "assist":
+        return 0.5
+
+    if correct_action == "assist" and action == "monitor":
+        return 0.5
+
+    # Moderate mistake
+    if action in ["assist", "clarify"] and correct_action in ["assist", "clarify"]:
+        return 0.4
+
+    # Escalation mistakes (more serious)
+    if action == "escalate" and correct_action != "escalate":
+        return 0.2
+
+    # Default wrong but still valid range
+    return 0.1
