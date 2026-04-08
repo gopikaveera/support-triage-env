@@ -34,7 +34,7 @@ for TASK_NAME in TASKS:
         for step in range(5):
             text = state["scenario"]
 
-            # 🔥 REQUIRED API CALL
+            # REQUIRED API CALL
             response = client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
