@@ -39,6 +39,9 @@ class SupportTriageEnv:
         else:
             reward = base_reward
 
+        # Keep reward strictly within (0, 1)
+        reward = max(0.01, min(0.99, reward))
+
         # Track action history
         self.history.append(action)
 
