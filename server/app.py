@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 import random
-import subprocess
 
 app = FastAPI()
+current_step = 0
+current_scenario = ""
 
-# Sample scenarios
 scenarios = [
     "OTP not received",
     "Payment deducted but order not confirmed",
@@ -12,21 +12,17 @@ scenarios = [
     "Need help but not clear"
 ]
 
-current_step = 0
 
-
-# Health check (optional but good)
 @app.get("/")
 def read_root():
     return {"status": "running"}
 
 
-# ✅ REQUIRED: RESET ENDPOINT
+
 @app.post("/reset")
 def reset():
     global current_step, current_scenario
     current_step = 0
-
     current_scenario = random.choice(scenarios)
 
     return {
@@ -34,18 +30,16 @@ def reset():
         "step": current_step
     }
 
-# ✅ REQUIRED: STEP ENDPOINT
+
+
 @app.post("/step")
 def step(action: str):
-    global current_step
+    global current_step, current_scenario
     current_step += 1
-
-    # Use LAST scenario from reset (important)
-    global current_scenario
 
     scenario = current_scenario.lower()
 
-    # Rule-based mapping (deterministic)
+    # Determine correct action
     if "otp" in scenario or "login" in scenario:
         correct_action = "assist"
     elif "payment" in scenario or "charged" in scenario:
@@ -57,13 +51,16 @@ def step(action: str):
     else:
         correct_action = "monitor"
 
-    # Reward logic
+    # SAFE reward logic
     if action == correct_action:
-        reward = 0.9
+        reward = 0.85
     elif action in ["assist", "clarify", "escalate", "monitor"]:
-        reward = 0.5
+        reward = 0.55
     else:
-        reward = 0.1
+        reward = 0.15
+
+    # HARD SAFETY (fixes your failure)
+    reward = max(0.01, min(0.99, float(reward)))
 
     done = current_step >= 5
 
@@ -72,15 +69,11 @@ def step(action: str):
         "done": done
     }
 
-# (Optional) Run inference at startup — keep if needed
-@app.on_event("startup")
-def run_inference():
-    subprocess.run(["python", "inference.py"])
 
+#  Required entry point
 def main():
     return app
 
 
 if __name__ == "__main__":
     main()
-
