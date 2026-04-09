@@ -5,15 +5,15 @@ from env.support_triage_env import SupportTriageEnv
 # Required environment variables
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-API_KEY = os.getenv("API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-if API_KEY is None:
-    raise ValueError("API_KEY environment variable is required")
+if HF_TOKEN is None:
+    raise ValueError("HF_TOKEN environment variable is required")
 
 # Initialize OpenAI client
 client = OpenAI(
     base_url=API_BASE_URL,
-    api_key=API_KEY
+    api_key=HF_TOKEN
 )
 
 # Task setup
