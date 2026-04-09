@@ -24,14 +24,15 @@ def read_root():
 # ✅ REQUIRED: RESET ENDPOINT
 @app.post("/reset")
 def reset():
-    global current_step
+    global current_step, current_scenario
     current_step = 0
 
+    current_scenario = random.choice(scenarios)
+
     return {
-        "scenario": random.choice(scenarios),
+        "scenario": current_scenario,
         "step": current_step
     }
-
 
 # ✅ REQUIRED: STEP ENDPOINT
 @app.post("/step")
@@ -39,15 +40,30 @@ def step(action: str):
     global current_step
     current_step += 1
 
-    # Simple reward logic
-    if action == "assist":
-        reward = 1.0
-    elif action == "clarify":
-        reward = 0.25
-    elif action == "escalate":
-        reward = 1.0
+    # Use LAST scenario from reset (important)
+    global current_scenario
+
+    scenario = current_scenario.lower()
+
+    # Rule-based mapping (deterministic)
+    if "otp" in scenario or "login" in scenario:
+        correct_action = "assist"
+    elif "payment" in scenario or "charged" in scenario:
+        correct_action = "escalate"
+    elif "crash" in scenario or "bug" in scenario:
+        correct_action = "assist"
+    elif "not clear" in scenario or "help" in scenario:
+        correct_action = "clarify"
     else:
-        reward = -1.0
+        correct_action = "monitor"
+
+    # Reward logic
+    if action == correct_action:
+        reward = 0.9
+    elif action in ["assist", "clarify", "escalate", "monitor"]:
+        reward = 0.5
+    else:
+        reward = 0.1
 
     done = current_step >= 5
 
@@ -55,7 +71,6 @@ def step(action: str):
         "reward": reward,
         "done": done
     }
-
 
 # (Optional) Run inference at startup — keep if needed
 @app.on_event("startup")
@@ -68,3 +83,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
