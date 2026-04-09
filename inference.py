@@ -67,4 +67,5 @@ for TASK_NAME in TASKS:
     except Exception:
         success = False
 
-    print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(f'{r:.2f}' for r in rewards)}")
+    finally:
+        print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(f'{r:.2f}' for r in rewards)}")
