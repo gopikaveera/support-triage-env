@@ -1,162 +1,137 @@
----
-title: Support Triage Environment
-emoji: 🤖
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-pinned: false
----
+Support Triage Environment
+Overview
+The Support Triage Environment simulates a real-world customer support workflow in which an AI agent must determine the most appropriate action for incoming user issues.
 
-# 🤖 Support Triage Environment
+At each step, the agent analyzes a scenario and selects one of the following actions:
 
-## 🚀 Overview
-The **Support Triage Environment** simulates a real-world customer support system where an AI agent must intelligently decide how to respond to incoming user issues.
+assist — provide direct help for resolvable issues
+clarify — request additional information when the issue is ambiguous
+escalate — forward critical or system-level issues
+monitor — track low-priority or intermittent issues
+This environment evaluates decision-making under uncertainty, prioritization, and the ability to handle real-world ambiguity.
 
-The agent must classify each scenario into one of four actions:
-- 🛠️ **assist** — provide direct help  
-- ❓ **clarify** — request more information  
-- 🚨 **escalate** — forward critical issues  
-- 👀 **monitor** — track low-priority issues  
+Real-World Motivation
+Customer support systems must triage large volumes of user issues efficiently. Decisions depend on:
 
-This environment evaluates:
-- Decision-making accuracy  
-- Handling ambiguity  
-- Prioritization under uncertainty  
+urgency and impact
+clarity of the request
+risk (financial, security, or system-wide)
+user sentiment
+This environment models those dynamics to provide a meaningful benchmark for evaluating intelligent agents.
 
----
+Scenarios are synthetically generated based on real-world customer support patterns.
 
-## 🌍 Real-World Motivation
-Customer support teams constantly triage issues based on urgency, clarity, and business impact.
+Action Space
+The agent selects one of four discrete actions:
 
-This environment replicates that workflow in a structured, testable format for AI agents.
+assist — resolve the issue directly
+clarify — gather missing or unclear information
+escalate — handle high-risk or critical issues
+monitor — observe non-critical or intermittent issues
+Observation Space
+Each step returns a structured observation:
 
-> ⚠️ **Note:** Scenarios are synthetically generated based on real-world customer support patterns.
-
----
-
-## 🧠 Problem Design
-
-### 🔹 Action Space
-| Action     | Description |
-|------------|------------|
-| assist     | Provide direct resolution |
-| clarify    | Ask for missing details |
-| escalate   | Handle critical/high-risk issues |
-| monitor    | Observe low-priority situations |
-
----
-
-### 🔹 Observation Space
-Each step returns:
-
-```json
 {
   "scenario": "User issue description",
-  "step": 0
+  "step": 0,
+  "history": [],
+  "progress": "Step 0 of N"
 }
-```
+scenario: the current user issue
+step: current step index
+history: list of past actions
+progress: human-readable step tracking
+Task Design
+The environment includes three levels of difficulty:
 
----
+Easy
+Clearly defined issues
+Direct mapping to a single action
+Example: OTP not received → assist
 
-## 🎯 Task Difficulty Levels
+Medium
+Partially ambiguous scenarios
+Requires interpretation and decision-making
+Example: vague error message → clarify
 
-| Level  | Description | Example |
-|--------|------------|--------|
-| Easy   | Clear, direct issues | OTP not received → assist |
-| Medium | Ambiguous scenarios | Requires reasoning |
-| Hard   | Critical / edge cases | May require escalation |
+Hard
+Critical, high-impact, or sensitive issues
+Requires prioritization and multi-step reasoning
+Example: system outage or security concern → escalate
 
----
+Multi-Step Behavior
+Easy and medium tasks may complete quickly
 
-## 🏆 Reward System
+Hard tasks require at least two steps before completion
 
-| Outcome   | Reward |
-|----------|--------|
-| Correct   | +1.0 |
-| Partial   | +0.25 |
-| Incorrect | -1.0 |
+Encourages realistic workflows such as:
 
-### 📈 Difficulty Scaling
-- Medium → ×1.1  
-- Hard → ×1.2  
+clarify → assist
+detect severity → escalate
+Reward Design
+The environment provides a shaped reward signal:
 
-✔ Continuous reward feedback ensures stable evaluation.
+Base reward is computed using a deterministic grader
 
----
+Additional shaping includes:
 
-## ⚙️ Environment Design
-- 🎲 Random scenario generation  
-- ⏱️ Fixed episode length  
-- 📏 Deterministic grading  
-- 🔌 Fully OpenEnv compatible  
+bonus for correct action on the first step
+penalty for repeating the same action
+Rewards are constrained to the range (0.01, 0.99)
 
----
+This design encourages:
 
-## 🤖 Inference Pipeline
+efficient decision-making
+non-repetitive behavior
+correct prioritization across steps
+Environment Design
+Randomized scenario selection
+Multi-step interaction support
+Action history tracking
+Difficulty-aware termination logic
+Deterministic grading for reproducibility
+OpenEnv Compliance
+The environment adheres to the OpenEnv specification:
 
-Baseline agent:
-- Uses an OpenAI-compatible client  
-- Reads environment variables  
+Implements reset(), step(), and state()
+Uses structured observation, action, and reward formats
+Includes deterministic grading logic
+Provides openenv.yaml metadata
+Validated using OpenEnv validation tools
+Inference
+The baseline inference script:
 
-### Output Format
-```
+Uses an OpenAI-compatible client
+
+Reads configuration from environment variables:
+
+API_BASE_URL
+MODEL_NAME
+HF_TOKEN
+Produces structured logs in the required format:
+
 [START]
 [STEP]
 [END]
-```
+The script demonstrates reproducible behavior across all task levels.
 
----
+Setup
+Local Execution
+git clone <repository-url>
+cd support-triage-env
 
-## 🛠️ Setup Guide
-
-### ▶️ Run Locally
-```bash
 docker build -t support-triage-env .
 docker run support-triage-env
-```
-
----
-
-## ☁️ Deployment
-- Hosted on Hugging Face Spaces  
-- Docker-based execution  
-- OpenEnv compatible  
-
----
-
-## 📊 Baseline Performance
-- Moderate performance across tasks  
-- Higher variance on medium and hard scenarios  
-- Reflects realistic ambiguity challenges  
-
----
-
-## ✨ Key Features
-- 🧩 Real-world decision simulation  
-- 📊 Multi-level difficulty  
-- 🎯 Deterministic evaluation  
-- 📈 Continuous reward scoring  
-- ⚡ Lightweight and fast  
-
----
-
-## 🧪 Example Scenario
-
-**Input:**
-```
-User: "My payment was deducted but order not confirmed"
-```
-
-**Expected Action:**
-```
-escalate
-```
-
----
-
-## 🏁 Conclusion
-This environment provides a **practical and scalable benchmark** for evaluating AI agents in customer support triage tasks.
-
-It bridges the gap between:
-- Academic RL environments  
-- Real-world decision-making systems  
+Deployment
+Deployed as a Docker-based Hugging Face Space
+Compatible with OpenEnv validation pipeline
+Designed to run within constrained compute environments
+Key Features
+Real-world task simulation
+Multi-level difficulty progression
+Reward shaping with intermediate signals
+Multi-step decision-making
+Deterministic evaluation
+Lightweight and deployable
+Conclusion
+The Support Triage Environment provides a practical benchmark for evaluating AI agents in customer support workflows. It captures key challenges such as ambiguity handling, prioritization, and efficient decision-making, making it suitable for both training and evaluation of intelligent systems.
