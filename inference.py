@@ -2,21 +2,40 @@ import os
 from openai import OpenAI
 from env.support_triage_env import SupportTriageEnv
 
-# Required environment variables
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+
+if not API_KEY:
+    raise ValueError("Missing HF_TOKEN or API_KEY")
+if not API_BASE_URL:
+    raise ValueError("API_BASE_URL is missing in environment variables")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4.1-mini")
-HF_TOKEN = os.getenv("HF_TOKEN")
 
-if HF_TOKEN is None:
-    raise ValueError("HF_TOKEN environment variable is required")
+if API_KEY is None:
+    raise ValueError("API_KEY environment variable is required")
 
-# Initialize OpenAI client
 client = OpenAI(
     base_url=API_BASE_URL,
-    api_key=HF_TOKEN
+    api_key=API_KEY
 )
 
-# Task setup
+
+def warmup_llm():
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "user", "content": "Say OK"}
+            ]
+        )
+        print("[WARMUP]", response.choices[0].message.content)
+    except Exception as e:
+        print("[WARMUP ERROR]", str(e))
+
+
+warmup_llm()
+
+
 TASKS = ["easy", "medium", "hard"]
 BENCHMARK = "support_triage_env"
 
@@ -32,26 +51,29 @@ for TASK_NAME in TASKS:
         state = env.reset()
 
         for step in range(5):
-            text = state["scenario"]
+            text = state.get("scenario", "No scenario provided")
 
-            # REQUIRED API CALL
-            response = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a support triage agent. Choose ONLY one action: monitor, clarify, assist, escalate."
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Scenario: {text}\nAnswer with one word."
-                    }
-                ]
-            )
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are a support triage agent. Choose ONLY one action: monitor, clarify, assist, escalate."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Scenario: {text}\nAnswer with one word."
+                        }
+                    ]
+                )
 
-            action = response.choices[0].message.content.strip().lower()
+                action = response.choices[0].message.content.strip().lower()
 
-            # Safety fallback
+            except Exception as llm_error:
+                print(f"[LLM ERROR] {str(llm_error)}")
+                action = "assist"  # fallback
+
             if action not in ["monitor", "clarify", "assist", "escalate"]:
                 action = "assist"
 
@@ -64,8 +86,16 @@ for TASK_NAME in TASKS:
                 success = True
                 break
 
-    except Exception:
+    except Exception as e:
         success = False
+        print(f"[ERROR] {str(e)}")
 
     finally:
-        print(f"[END] success={str(success).lower()} steps={len(rewards)} rewards={','.join(f'{r:.2f}' for r in rewards)}")
+        score = sum(rewards) / len(rewards) if rewards else 0.0
+
+        print(
+        f"[END] success={str(success).lower()} "
+        f"steps={len(rewards)} "
+        f"score={score:.2f} "
+        f"rewards={','.join(f'{r:.2f}' for r in rewards)}"
+    )
