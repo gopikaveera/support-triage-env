@@ -1,16 +1,33 @@
 from fastapi import FastAPI
 import random
+import subprocess
+
 
 app = FastAPI()
+
 current_step = 0
 current_scenario = ""
+current_task = ""
 
-scenarios = [
-    "OTP not received",
-    "Payment deducted but order not confirmed",
-    "App crashes randomly",
-    "Need help but not clear"
-]
+# Task-specific scenario pools
+TASK_POOLS = {
+    "easy": [
+        "OTP not received",
+        "Login issue"
+    ],
+    "medium": [
+        "App crashes randomly",
+        "Feature not working properly"
+    ],
+    "hard": [
+        "Payment deducted but order not confirmed",
+        "Charged twice for same order"
+    ]
+}
+
+@app.on_event("startup")
+def run_inference():
+    subprocess.Popen(["python", "inference.py"])
 
 
 @app.get("/")
@@ -20,21 +37,28 @@ def read_root():
 
 
 @app.post("/reset")
-def reset():
-    global current_step, current_scenario
+def reset(task: str = "easy"):
+    global current_step, current_scenario, current_task
+
     current_step = 0
-    current_scenario = random.choice(scenarios)
+    current_task = task
+
+    # fallback safety
+    pool = TASK_POOLS.get(task, ["General issue"])
+
+    current_scenario = random.choice(pool)
 
     return {
         "scenario": current_scenario,
-        "step": current_step
+        "step": current_step,
+        "task": current_task   
     }
 
 
 
 @app.post("/step")
 def step(action: str):
-    global current_step, current_scenario
+    global current_step, current_scenario, current_task
     current_step += 1
 
     scenario = current_scenario.lower()
@@ -59,18 +83,18 @@ def step(action: str):
     else:
         reward = 0.15
 
-    # HARD SAFETY (fixes your failure)
+
     reward = max(0.01, min(0.99, float(reward)))
 
     done = current_step >= 5
 
     return {
         "reward": reward,
-        "done": done
+        "done": done,
+        "task": current_task   
     }
 
 
-#  Required entry point
 def main():
     return app
 
