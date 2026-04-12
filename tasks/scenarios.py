@@ -1,7 +1,7 @@
 SCENARIOS = [
     {
         "id": 1,
-        "text": "User says their OTP is not arriving during payment checkout.",
+        "text": "User says OTP is not arriving during payment checkout, money is on hold and they are worried the transaction might fail.",
         "correct_action": "assist",
         "reason": "Clear issue that can be resolved with guidance",
         "difficulty": "easy",
@@ -33,7 +33,7 @@ SCENARIOS = [
     },
     {
         "id": 5,
-        "text": "User reports that payment was deducted but their account still shows inactive.",
+        "text": "User reports payment was deducted but account still shows inactive, and they mention this has already happened once before.",
         "correct_action": "escalate",
         "reason": "Financial issue affecting trust and service",
         "difficulty": "medium",
@@ -65,7 +65,7 @@ SCENARIOS = [
     },
     {
         "id": 9,
-        "text": "User says the entire website is down and no one in their team can log in.",
+        "text": "User says the entire website is down, no one in their team can log in, and this is affecting business operations urgently.",
         "correct_action": "escalate",
         "reason": "Critical system-wide outage",
         "difficulty": "hard",
@@ -81,7 +81,7 @@ SCENARIOS = [
     },
     {
         "id": 11,
-        "text": "User reports that sensitive account data appears incorrect after login.",
+        "text": "User reports sensitive account data appears incorrect after login and is concerned about possible data corruption or breach.",
         "correct_action": "escalate",
         "reason": "Potential data integrity or security issue",
         "difficulty": "hard",
@@ -105,7 +105,7 @@ SCENARIOS = [
     },
     {
     "id": 14,
-    "text": "User says their account was accessed from an unknown device and they did not log in.",
+    "text": "User says their account was accessed from an unknown device, they did not log in, and they are worried about unauthorized access.",
     "correct_action": "escalate",
     "reason": "Potential account breach or unauthorized access",
     "difficulty": "hard",
@@ -129,7 +129,7 @@ SCENARIOS = [
     },
     {
     "id": 17,
-    "text": "User says they are being charged twice for the same subscription.",
+    "text": "User says they are being charged twice for the same subscription and is frustrated as support has not responded yet.",
     "correct_action": "escalate",
     "reason": "Billing error involving financial impact",
     "difficulty": "hard",
